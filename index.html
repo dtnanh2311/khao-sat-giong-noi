@@ -442,6 +442,7 @@ function buildQueue(){
 function renderRating(host, item, idx, total, onDone){
   host.innerHTML = "";
   var shown = Date.now();
+  var enable;   /* khai báo ở đây để cả hai nhánh bên dưới đều gán được, tránh lỗi phạm vi trong strict mode */
   var pl = Player(host, item.src, {quality:item.quality, onEnd:function(){ enable(); }});
 
   var wrap = document.createElement("div");
@@ -460,7 +461,7 @@ function renderRating(host, item, idx, total, onDone){
     var gate = document.createElement("p");
     gate.className="gate"; gate.textContent="Hãy nghe đoạn âm thanh trước khi trả lời.";
     host.appendChild(gate);
-    function enable(){ var bs=opts.querySelectorAll(".chip"); for(var i=0;i<bs.length;i++) bs[i].disabled=false; gate.hidden=true; }
+    enable = function(){ var bs=opts.querySelectorAll(".chip"); for(var i=0;i<bs.length;i++) bs[i].disabled=false; gate.hidden=true; };
     return;
   }
 
