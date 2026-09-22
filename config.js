@@ -14,15 +14,19 @@ window.SURVEY_CONFIG = {
 
   /* --- Nơi nhận dữ liệu -------------------------------------------------
      Dán URL /exec của Google Apps Script vào đây (xem HUONG-DAN.md mục 3). */
-  submitUrl: "https://script.google.com/macros/s/AKfycb.../exec",
+  submitUrl: "",
 
   /* Tên nghiên cứu, ghi kèm mỗi dòng dữ liệu để phân biệt các đợt khảo sát. */
   studyName: "tts-vi-mos-2026-dot1",
 
   /* --- Âm thanh ---------------------------------------------------------
      Đường dẫn ghép theo công thức:  audioBase + system + "/" + sentence + ext
-     Ví dụ:  audio/A/s01.wav                                              */
-  audioBase: "audio/",
+     Ví dụ:  audio_for_survey/A/s01.wav
+     LƯU Ý: thư mục thật trên GitHub tên là "audio_for_survey" (do giải nén
+     từ audio_for_survey.zip giữ nguyên tên thư mục ngoài cùng), không phải
+     "audio" như tên gốc trong ZIP. Nếu sau này bạn đổi tên thư mục trên
+     GitHub thành "audio", nhớ sửa lại dòng audioBase này cho khớp. */
+  audioBase: "audio_for_survey/",
   ext: ".wav",
 
   /* Các điều kiện so sánh. Mỗi tên là một thư mục con trong audio/.
@@ -46,7 +50,7 @@ window.SURVEY_CONFIG = {
   maxPlays: 2,
 
   /* --- Mẫu chỉnh âm lượng ---------------------------------------------- */
-  calibration: "extra/calib.wav",
+  calibration: "extra/calib.wav",  /* nối với audioBase ở trên -> audio_for_survey/extra/calib.wav */
 
   /* --- Mẫu làm quen (không tính điểm) ----------------------------------
      Nên có đủ dải: một mẫu tệ, một mẫu trung bình, một mẫu tốt.
