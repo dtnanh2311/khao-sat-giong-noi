@@ -14,7 +14,7 @@ window.SURVEY_CONFIG = {
 
   /* --- Nơi nhận dữ liệu -------------------------------------------------
      Dán URL /exec của Google Apps Script vào đây (xem HUONG-DAN.md mục 3). */
-  submitUrl: "",
+  submitUrl: "https://script.google.com/macros/s/AKfycbzgZ95PgkypWdtiaqMz9Otuxj_rFctEEzYkXJZ_osUmH_iOcw6LHAM2DLFQKqxBf9LK/exec",
 
   /* Tên nghiên cứu, ghi kèm mỗi dòng dữ liệu để phân biệt các đợt khảo sát. */
   studyName: "tts-vi-mos-2026-dot1",
