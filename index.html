@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Khảo sát đánh giá giọng nói tổng hợp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9EAE4; --surface:#F5F6F1; --ink:#1A2B33; --ink-soft:#5A6B72;
+  --rule:#C9CCC3; --accent:#2E6E77; --accent-soft:#D8E4E4; --warn:#A8621F;
+  --focus:#2E6E77;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141A1C; --surface:#1D2528; --ink:#E4E8E5; --ink-soft:#94A2A4;
+    --rule:#2F3A3D; --accent:#6FB6BA; --accent-soft:#223234; --warn:#D9924A;
+    --focus:#6FB6BA;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141A1C; --surface:#1D2528; --ink:#E4E8E5; --ink-soft:#94A2A4;
+  --rule:#2F3A3D; --accent:#6FB6BA; --accent-soft:#223234; --warn:#D9924A;
+  --focus:#6FB6BA;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-weight:400; font-size:17px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:33rem;margin:0 auto;padding:2rem 1.25rem 4rem}
+h1{font-size:1.6rem;font-weight:700;line-height:1.25;margin:0 0 .75rem;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:500;margin:2rem 0 .6rem;letter-spacing:-.005em}
+p{margin:0 0 1rem;max-width:62ch}
+.lede{color:var(--ink-soft)}
+ul{margin:0 0 1rem;padding-left:1.15rem}
+li{margin-bottom:.4rem}
+hr{border:0;border-top:1px solid var(--rule);margin:2rem 0}
+.screen{display:none}
+.screen.on{display:block}
+
+/* ---- progress ---- */
+.prog{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);
+  padding:.75rem 0 .65rem;margin:-2rem 0 1.5rem;border-bottom:1px solid var(--rule)}
+.prog-row{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:.8rem;color:var(--ink-soft);margin-bottom:.45rem}
+.prog-track{height:2px;background:var(--rule)}
+.prog-fill{height:2px;background:var(--accent);width:0;transition:width .35s ease}
+
+/* ---- player ---- */
+.player{background:var(--surface);border:1px solid var(--rule);padding:1.25rem;margin-bottom:1.75rem}
+.wave{display:block;width:100%;height:68px;margin-bottom:1rem}
+.wave rect{fill:var(--rule)}
+.wave rect.lit{fill:var(--accent)}
+.pbar{display:flex;align-items:center;gap:.9rem}
+.play{
+  flex:0 0 auto;width:54px;height:54px;border-radius:50%;border:1px solid var(--accent);
+  background:var(--accent);color:var(--paper);cursor:pointer;display:grid;place-items:center;
+  transition:transform .12s ease;
+}
+.play:hover{transform:scale(1.04)}
+.play:disabled{background:transparent;border-color:var(--rule);color:var(--ink-soft);cursor:not-allowed;transform:none}
+.play svg{width:20px;height:20px;fill:currentColor}
+.plays{font-size:.85rem;color:var(--ink-soft);line-height:1.35}
+.plays b{font-weight:500;color:var(--ink)}
+.plays.spent b{color:var(--warn)}
+
+/* ---- scale ---- */
+.scale{border-top:1px solid var(--rule)}
+.opt{
+  display:flex;gap:1rem;align-items:flex-start;width:100%;text-align:left;
+  padding:.85rem .75rem;background:none;border:0;border-bottom:1px solid var(--rule);
+  font:inherit;color:var(--ink);cursor:pointer;
+}
+.opt:hover:not(:disabled){background:var(--surface)}
+.opt:disabled{opacity:.42;cursor:not-allowed}
+.opt .n{flex:0 0 1.9rem;font-size:1.5rem;font-weight:300;line-height:1.2;color:var(--ink-soft)}
+.opt .t{font-size:.95rem;line-height:1.45;padding-top:.15rem}
+.opt[aria-pressed="true"]{background:var(--accent-soft)}
+.opt[aria-pressed="true"] .n{color:var(--accent);font-weight:500}
+.gate{font-size:.85rem;color:var(--warn);margin:.85rem 0 0}
+
+/* ---- form ---- */
+.field{margin-bottom:1.6rem}
+.q{font-size:.95rem;font-weight:500;margin-bottom:.55rem;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.chip{
+  padding:.5rem .85rem;border:1px solid var(--rule);background:var(--surface);
+  font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer;
+}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:500}
+.hint{font-size:.82rem;color:var(--ink-soft);margin-top:.4rem}
+
+/* ---- buttons ---- */
+.btn{
+  display:inline-block;padding:.8rem 1.6rem;border:1px solid var(--accent);
+  background:var(--accent);color:var(--paper);font:inherit;font-weight:500;font-size:.95rem;
+  cursor:pointer;
+}
+.btn:disabled{background:transparent;border-color:var(--rule);color:var(--ink-soft);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn-row{margin-top:2rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+
+.note{border-left:2px solid var(--accent);padding:.1rem 0 .1rem 1rem;margin:1.5rem 0;color:var(--ink-soft);font-size:.92rem}
+.tag{display:inline-block;font-size:.78rem;color:var(--accent);border:1px solid var(--accent);padding:.15rem .5rem;margin-bottom:.9rem}
+textarea{width:100%;min-height:9rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;
+  padding:.75rem;border:1px solid var(--rule);background:var(--surface);color:var(--ink);resize:vertical}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:420px){ .wrap{padding:1.5rem 1rem 3rem} h1{font-size:1.4rem} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ================= 1. GIỚI THIỆU ================= -->
+<section id="s-intro" class="screen on">
+  <h1>Giọng máy nghe giống người đến đâu?</h1>
+  <p class="lede">Khảo sát này thu thập cảm nhận của người nghe về các đoạn giọng nói do máy tạo ra. Kết quả phục vụ một nghiên cứu khoa học về công nghệ tổng hợp tiếng nói tiếng Việt.</p>
+
+  <h2>Bạn cần chuẩn bị</h2>
+  <ul>
+    <li><b>Tai nghe</b> — bắt buộc. Loa ngoài làm sai lệch kết quả.</li>
+    <li>Một chỗ yên tĩnh.</li>
+    <li>Khoảng <b>20 phút</b>, làm liền một mạch.</li>
+  </ul>
+
+  <h2>Cách làm</h2>
+  <p>Bạn nghe lần lượt các đoạn âm thanh ngắn. Sau mỗi đoạn, chấm điểm từ 1 đến 5 cho <b>mức độ tự nhiên</b> của giọng nói — nghe giống người thật đến đâu.</p>
+  <p>Đừng bận tâm đến nội dung câu nói hay việc bạn có thích giọng đó không. Chỉ tập trung vào chất giọng. Chấm theo cảm nhận đầu tiên, không cần cân nhắc lâu.</p>
+
+  <div class="note">Câu trả lời của bạn được lưu ẩn danh. Chúng tôi không thu thập tên, email hay bất kỳ thông tin nhận dạng nào. Bạn có thể dừng bất cứ lúc nào bằng cách đóng trang.</div>
+
+  <div class="btn-row"><button class="btn" id="go-demo">Bắt đầu</button></div>
+</section>
+
+<!-- ================= 2. THÔNG TIN NGƯỜI NGHE ================= -->
+<section id="s-demo" class="screen">
+  <h1>Vài câu trước khi bắt đầu</h1>
+  <p class="lede">Những thông tin này giúp chúng tôi phân tích kết quả theo nhóm. Không có câu trả lời đúng hay sai.</p>
+  <div id="demo-fields"></div>
+  <p class="gate" id="demo-gate" hidden>Vui lòng trả lời hết các câu trên.</p>
+  <div class="btn-row"><button class="btn" id="go-calib" disabled>Tiếp tục</button></div>
+</section>
+
+<!-- ================= 3. CHỈNH ÂM LƯỢNG ================= -->
+<section id="s-calib" class="screen">
+  <h1>Chỉnh âm lượng</h1>
+  <p class="lede">Đeo tai nghe vào. Bấm phát và chỉnh âm lượng đến mức nghe thoải mái — không quá nhỏ, không phải nhíu mày để nghe.</p>
+  <div id="calib-player"></div>
+  <p><b>Giữ nguyên mức âm lượng này</b> trong suốt khảo sát. Thay đổi giữa chừng sẽ làm kết quả không so sánh được.</p>
+  <div class="btn-row"><button class="btn" id="go-train" disabled>Âm lượng đã ổn</button></div>
+</section>
+
+<!-- ================= 4. LÀM QUEN ================= -->
+<section id="s-train" class="screen">
+  <div class="prog">
+    <div class="prog-row"><span id="train-count"></span><span>Làm quen</span></div>
+    <div class="prog-track"><div class="prog-fill" id="train-fill"></div></div>
+  </div>
+  <span class="tag">Không tính điểm</span>
+  <h1>Làm quen với thang điểm</h1>
+  <p class="lede">Ba đoạn sau có chất lượng rất khác nhau, từ kém đến tốt. Hãy nghe và thử chấm để quen tay. Điểm ở bước này không được tính vào kết quả.</p>
+  <div id="train-host"></div>
+</section>
+
+<!-- ================= 5. CHẤM ĐIỂM ================= -->
+<section id="s-main" class="screen">
+  <div class="prog">
+    <div class="prog-row"><span id="main-count"></span><span id="main-left"></span></div>
+    <div class="prog-track"><div class="prog-fill" id="main-fill"></div></div>
+  </div>
+  <div id="main-host"></div>
+</section>
+
+<!-- ================= 6. GỬI ================= -->
+<section id="s-send" class="screen">
+  <h1>Đang gửi kết quả</h1>
+  <p class="lede" id="send-status">Vui lòng giữ trang mở thêm vài giây.</p>
+</section>
+
+<section id="s-done" class="screen">
+  <h1>Xong rồi. Cảm ơn bạn.</h1>
+  <p class="lede">Câu trả lời của bạn đã được ghi nhận và sẽ được dùng ẩn danh trong nghiên cứu.</p>
+  <p>Nếu thấy khảo sát này hữu ích, bạn có thể gửi link cho bạn bè — chúng tôi vẫn đang cần thêm người nghe, đặc biệt là người nói giọng miền Trung và miền Nam.</p>
+</section>
+
+<section id="s-manual" class="screen">
+  <h1>Gửi tự động không thành công</h1>
+  <p class="lede">Kết nối tới máy chủ bị lỗi, nhưng câu trả lời của bạn không mất. Hãy bấm nút bên dưới để sao chép, rồi gửi đoạn mã này lại cho người mời bạn làm khảo sát.</p>
+  <textarea id="manual-data" readonly></textarea>
+  <div class="btn-row">
+    <button class="btn" id="copy-data">Sao chép kết quả</button>
+    <button class="btn ghost" id="retry-send">Thử gửi lại</button>
+  </div>
+</section>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+(function(){
+"use strict";
+var CFG = window.SURVEY_CONFIG || {};
+var MAX_PLAYS = CFG.maxPlays || 2;
+var DEMO = !!CFG.demoMode;
+
+/* ---------- nhãn thang điểm ---------- */
+var SCALE = [
+  [5,"Rất tự nhiên — gần như không phân biệt được với giọng người thật"],
+  [4,"Tự nhiên — nghe thoải mái, chỉ có vài chỗ hơi máy móc"],
+  [3,"Tạm được — nghe ra là giọng máy nhưng không khó chịu"],
+  [2,"Kém — máy móc rõ rệt, nghe một lúc thấy mệt"],
+  [1,"Rất kém — khó nghe, khó chịu"]
+];
+
+/* ---------- câu hỏi nhân khẩu ---------- */
+var DEMOQ = [
+  {k:"age",   q:"Bạn bao nhiêu tuổi?", o:["Dưới 18","18–25","26–35","36–50","Trên 50"]},
+  {k:"gender",q:"Giới tính",           o:["Nữ","Nam","Khác / không muốn nêu"]},
+  {k:"native",q:"Tiếng Việt có phải tiếng mẹ đẻ của bạn không?", o:["Có","Không"]},
+  {k:"dialect",q:"Bạn nói giọng vùng nào?", o:["Miền Bắc","Miền Trung","Miền Nam","Không rõ"]},
+  {k:"device",q:"Bạn đang nghe bằng gì?", o:["Tai nghe chụp tai","Tai nghe nhét tai","Loa máy tính","Loa điện thoại"],
+   hint:"Trả lời thật giúp chúng tôi lọc dữ liệu đúng cách. Nếu bạn không có tai nghe, vẫn cứ trả lời thật."},
+  {k:"env",   q:"Chỗ bạn ngồi có yên tĩnh không?", o:["Rất yên tĩnh","Hơi ồn","Khá ồn"]},
+  {k:"hearing",q:"Bạn có vấn đề gì về thính lực không?", o:["Không","Có"]},
+  {k:"exp",   q:"Bạn có làm việc liên quan đến công nghệ giọng nói / âm thanh không?", o:["Không","Có"]}
+];
+
+/* ---------- tiện ích ---------- */
+function $(id){return document.getElementById(id);}
+function show(id){
+  var ss=document.querySelectorAll(".screen");
+  for(var i=0;i<ss.length;i++) ss[i].classList.remove("on");
+  $(id).classList.add("on");
+  window.scrollTo(0,0);
+}
+function rndId(){
+  var s="";var c="abcdefghijkmnpqrstuvwxyz23456789";
+  for(var i=0;i<10;i++) s+=c[Math.floor(Math.random()*c.length)];
+  return s;
+}
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+function hash(str){var h=2166136261;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=(h*16777619)>>>0;}return h;}
+
+/* ---------- phiên làm việc ---------- */
+var SESSION = {
+  pid: rndId(),
+  study: CFG.studyName || "tts-mos",
+  group: 0,
+  startedAt: new Date().toISOString(),
+  ua: navigator.userAgent.slice(0,180),
+  screenW: window.screen ? window.screen.width : 0,
+  demographics: {},
+  ratings: [],
+  gold: []
+};
+
+/* ---------- audio ---------- */
+var actx = null;
+function ctx(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+
+/* Chế độ xem thử: tổng hợp âm thanh giả bằng Web Audio để bấm thử được toàn bộ luồng. */
+function demoBuffer(seed, quality){
+  var c = ctx(), sr = c.sampleRate, dur = 2.6 + (seed%7)*0.22;
+  var n = Math.floor(sr*dur), buf = c.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  var f0 = 115 + (seed%5)*22;
+  var noise = quality === undefined ? 0.04 : (1-quality)*0.22;
+  for(var i=0;i<n;i++){
+    var t=i/sr;
+    var syl = Math.floor(t/0.30);
+    var env = Math.sin(Math.PI*((t/0.30)-syl));
+    env = env>0?env:0;
+    var tone = ((seed+syl)%9)/9;
+    var f = f0*(1 + 0.14*Math.sin(2*Math.PI*(0.7+tone)*t));
+    var v = 0;
+    for(var k=1;k<=5;k++) v += Math.sin(2*Math.PI*f*k*t)/(k*1.7);
+    v = v*env*0.32 + (Math.random()*2-1)*noise*env;
+    var fade = Math.min(1, t*8, (dur-t)*8);
+    d[i] = v*fade;
+  }
+  return buf;
+}
+
+/* Trình phát: dùng <audio> cho file thật, Web Audio cho chế độ xem thử. */
+function Player(host, src, opts){
+  opts = opts || {};
+  var seed = hash(String(src));
+  var bars = 56, heights = [];
+  var s = seed;
+  for(var i=0;i<bars;i++){ s=(s*1103515245+12345)>>>0; heights.push(0.18+((s>>>8)%100)/100*0.82); }
+
+  var el = document.createElement("div");
+  el.className = "player";
+  var svg = '<svg class="wave" viewBox="0 0 '+(bars*6)+' 68" preserveAspectRatio="none" aria-hidden="true">';
+  for(var i=0;i<bars;i++){
+    var h = heights[i]*58, y=(68-h)/2;
+    svg += '<rect x="'+(i*6)+'" y="'+y.toFixed(1)+'" width="4" height="'+h.toFixed(1)+'" rx="1"></rect>';
+  }
+  svg += '</svg>';
+  el.innerHTML = svg +
+    '<div class="pbar">'+
+      '<button class="play" type="button" aria-label="Phát đoạn âm thanh">'+
+        '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>'+
+      '<div class="plays"></div>'+
+    '</div>';
+  host.appendChild(el);
+
+  var btn = el.querySelector(".play");
+  var info = el.querySelector(".plays");
+  var rects = el.querySelectorAll(".wave rect");
+  var plays = 0, playing = false, raf = null, node = null, audio = null, startT = 0, dur = 0;
+
+  function paint(p){
+    var lit = Math.floor(p*bars);
+    for(var i=0;i<bars;i++){
+      if(i<lit) rects[i].classList.add("lit"); else rects[i].classList.remove("lit");
+    }
+  }
+  function label(){
+    var left = MAX_PLAYS - plays;
+    if(playing){ info.innerHTML = "Đang phát…"; return; }
+    if(plays===0){ info.innerHTML = "Nghe được tối đa <b>"+MAX_PLAYS+" lần</b>"; info.className="plays"; return; }
+    if(left<=0){ info.innerHTML = "Đã hết lượt nghe"; info.className="plays spent"; return; }
+    info.innerHTML = "Còn <b>"+left+" lần</b> nghe"; info.className="plays";
+  }
+  function tick(){
+    var p;
+    if(DEMO) p = dur ? Math.min(1,(ctx().currentTime-startT)/dur) : 0;
+    else p = (audio && audio.duration) ? audio.currentTime/audio.duration : 0;
+    paint(p);
+    if(p<1 && playing) raf = requestAnimationFrame(tick);
+  }
+  function stop(){
+    playing=false; if(raf) cancelAnimationFrame(raf); paint(1);
+    setTimeout(function(){ if(!playing) paint(0); }, 450);
+    btn.disabled = plays>=MAX_PLAYS;
+    label();
+    if(opts.onEnd) opts.onEnd(plays);
+  }
+  function play(){
+    if(plays>=MAX_PLAYS||playing) return;
+    plays++; playing=true; btn.disabled=true; label();
+    if(DEMO){
+      var c=ctx();
+      if(c.state==="suspended") c.resume();
+      var buf = demoBuffer(seed, opts.quality);
+      node = c.createBufferSource(); node.buffer=buf; node.connect(c.destination);
+      dur = buf.duration; startT = c.currentTime;
+      node.onended = stop; node.start();
+    } else {
+      if(!audio){ audio = new Audio(src); audio.preload="auto"; audio.onended=stop;
+        audio.onerror=function(){ info.innerHTML="<b>Không tải được đoạn âm thanh.</b> Thử tải lại trang."; playing=false; }; }
+      audio.currentTime=0;
+      var pr = audio.play();
+      if(pr && pr.catch) pr.catch(function(){ playing=false; plays--; btn.disabled=false; label(); });
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  btn.addEventListener("click", play);
+  label();
+  return { playCount:function(){return plays;}, destroy:function(){ if(audio){audio.pause();} if(node){try{node.stop();}catch(e){}} } };
+}
+
+/* ---------- màn hình 1: giới thiệu ---------- */
+$("go-demo").addEventListener("click", function(){
+  if(DEMO){ try{ ctx().resume(); }catch(e){} }
+  buildDemo(); show("s-demo");
+});
+
+/* ---------- màn hình 2: nhân khẩu ---------- */
+function buildDemo(){
+  var host = $("demo-fields");
+  if(host.childElementCount) return;
+  DEMOQ.forEach(function(f){
+    var d = document.createElement("div"); d.className="field";
+    var h = '<span class="q">'+f.q+'</span><div class="chips">';
+    f.o.forEach(function(o){ h += '<button class="chip" type="button" aria-pressed="false" data-k="'+f.k+'" data-v="'+o+'">'+o+'</button>'; });
+    h += '</div>';
+    if(f.hint) h += '<p class="hint">'+f.hint+'</p>';
+    d.innerHTML = h; host.appendChild(d);
+  });
+  host.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    var sibs = b.parentNode.querySelectorAll(".chip");
+    for(var i=0;i<sibs.length;i++) sibs[i].setAttribute("aria-pressed","false");
+    b.setAttribute("aria-pressed","true");
+    SESSION.demographics[b.dataset.k] = b.dataset.v;
+    var done = Object.keys(SESSION.demographics).length === DEMOQ.length;
+    $("go-calib").disabled = !done;
+    if(done) $("demo-gate").hidden = true;
+  });
+}
+$("go-calib").addEventListener("click", function(){
+  Player($("calib-player"), CFG.audioBase + CFG.calibration, {quality:0.9, onEnd:function(){ $("go-train").disabled=false; }});
+  $("go-calib").disabled = true;
+  show("s-calib");
+});
+
+/* ---------- màn hình 3 → 4 ---------- */
+$("go-train").addEventListener("click", function(){ startTrain(); show("s-train"); });
+
+/* ---------- xây danh sách mẫu ---------- */
+function buildQueue(){
+  var sys = CFG.systems, sent = CFG.sentences, S = sys.length;
+  SESSION.group = Math.floor(Math.random()*S);
+  var items = [];
+  /* Ô vuông Latin: mỗi người nghe mỗi câu đúng một lần, từ một hệ thống khác nhau.
+     Nhờ vậy người nghe không bao giờ nghe lại cùng một câu -> đúng bản chất ACR. */
+  for(var i=0;i<sent.length;i++){
+    var sysIdx = (i + SESSION.group) % S;
+    items.push({
+      kind:"item",
+      sentence: sent[i],
+      system: sys[sysIdx],
+      quality: (CFG.demoQuality||{})[sys[sysIdx]],
+      src: CFG.audioBase + sys[sysIdx] + "/" + sent[i] + (CFG.ext||".wav")
+    });
+  }
+  shuffle(items);
+  /* Chèn câu hỏi vàng vào các vị trí rải đều, không rơi vào 3 mẫu đầu. */
+  var golds = shuffle((CFG.gold||[]).slice()).slice(0, CFG.goldCount||2);
+  var span = Math.floor((items.length-3)/(golds.length+1));
+  golds.forEach(function(g,k){
+    items.splice(3 + span*(k+1) + k, 0, {kind:"gold", answer:g.answer, src:CFG.audioBase+g.file});
+  });
+  return items;
+}
+
+/* ---------- khối chấm điểm dùng chung ---------- */
+function renderRating(host, item, idx, total, onDone){
+  host.innerHTML = "";
+  var shown = Date.now();
+  var pl = Player(host, item.src, {quality:item.quality, onEnd:function(){ enable(); }});
+
+  var wrap = document.createElement("div");
+  if(item.kind === "gold"){
+    wrap.innerHTML = '<p class="q" style="margin-bottom:.8rem">Đoạn vừa rồi đọc một con số. Đó là số nào?</p><div class="chips" id="gold-opts"></div>';
+    host.appendChild(wrap);
+    var opts = wrap.querySelector("#gold-opts");
+    (CFG.goldChoices||["3","5","7","9"]).forEach(function(v){
+      var b=document.createElement("button"); b.className="chip"; b.type="button"; b.textContent=v; b.disabled=true;
+      b.addEventListener("click", function(){
+        SESSION.gold.push({ position:idx, correct:item.answer, answered:v, ok:(v===item.answer) });
+        onDone();
+      });
+      opts.appendChild(b);
+    });
+    var gate = document.createElement("p");
+    gate.className="gate"; gate.textContent="Hãy nghe đoạn âm thanh trước khi trả lời.";
+    host.appendChild(gate);
+    function enable(){ var bs=opts.querySelectorAll(".chip"); for(var i=0;i<bs.length;i++) bs[i].disabled=false; gate.hidden=true; }
+    return;
+  }
+
+  wrap.innerHTML = '<p class="q" style="margin-bottom:.9rem">Giọng nói trong đoạn vừa nghe tự nhiên đến mức nào?</p><div class="scale"></div>';
+  host.appendChild(wrap);
+  var scale = wrap.querySelector(".scale");
+  SCALE.forEach(function(row){
+    var b = document.createElement("button");
+    b.className="opt"; b.type="button"; b.disabled=true; b.setAttribute("aria-pressed","false");
+    b.innerHTML = '<span class="n">'+row[0]+'</span><span class="t">'+row[1]+'</span>';
+    b.addEventListener("click", function(){
+      b.setAttribute("aria-pressed","true");
+      var rec = {
+        position: idx,
+        sentence: item.sentence,
+        system: item.system,
+        score: row[0],
+        plays: pl.playCount(),
+        msToRate: Date.now()-shown
+      };
+      if(item.kind==="item") SESSION.ratings.push(rec);
+      setTimeout(onDone, 190);
+    });
+    scale.appendChild(b);
+  });
+  var gate2 = document.createElement("p");
+  gate2.className="gate"; gate2.textContent="Hãy nghe đoạn âm thanh trước khi chấm điểm.";
+  host.appendChild(gate2);
+  function enable(){ var bs=scale.querySelectorAll(".opt"); for(var i=0;i<bs.length;i++) bs[i].disabled=false; gate2.hidden=true; }
+}
+
+/* ---------- làm quen ---------- */
+var trainQ = [], trainI = 0;
+function startTrain(){
+  trainQ = (CFG.training||[]).map(function(t,i){
+    return { kind:"train", src: CFG.audioBase + t.file, quality: t.quality };
+  });
+  trainI = 0; nextTrain();
+}
+function nextTrain(){
+  if(trainI >= trainQ.length){ startMain(); show("s-main"); return; }
+  $("train-count").textContent = "Mẫu làm quen "+(trainI+1)+" / "+trainQ.length;
+  $("train-fill").style.width = (trainI/trainQ.length*100)+"%";
+  renderRating($("train-host"), trainQ[trainI], trainI, trainQ.length, function(){ trainI++; nextTrain(); });
+}
+
+/* ---------- phần chính ---------- */
+var mainQ = [], mainI = 0;
+function startMain(){ mainQ = buildQueue(); mainI = 0; nextMain(); }
+function nextMain(){
+  if(mainI >= mainQ.length){ submit(); return; }
+  var n = mainQ.length;
+  $("main-count").textContent = "Mẫu "+(mainI+1)+" / "+n;
+  $("main-left").textContent  = mainI < n-1 ? ("Còn "+(n-mainI-1)) : "Mẫu cuối";
+  $("main-fill").style.width = (mainI/n*100)+"%";
+  renderRating($("main-host"), mainQ[mainI], mainI, n, function(){ mainI++; nextMain(); });
+}
+
+/* ---------- gửi dữ liệu ---------- */
+function payload(){
+  SESSION.finishedAt = new Date().toISOString();
+  SESSION.durationMin = Math.round((Date.parse(SESSION.finishedAt)-Date.parse(SESSION.startedAt))/6000)/10;
+  SESSION.goldPassed = SESSION.gold.filter(function(g){return g.ok;}).length;
+  SESSION.goldTotal  = SESSION.gold.length;
+  return JSON.stringify(SESSION);
+}
+function submit(){
+  show("s-send");
+  var body = payload();
+  if(DEMO || !CFG.submitUrl){
+    $("send-status").textContent = "Chế độ xem thử — không gửi dữ liệu đi đâu cả.";
+    setTimeout(function(){ show("s-done"); }, 900);
+    return;
+  }
+  fetch(CFG.submitUrl, {
+    method:"POST", redirect:"follow",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: body
+  }).then(function(r){
+    if(!r.ok) throw new Error("http "+r.status);
+    show("s-done");
+  }).catch(function(){
+    $("manual-data").value = body;
+    show("s-manual");
+  });
+}
+$("retry-send").addEventListener("click", submit);
+$("copy-data").addEventListener("click", function(){
+  var ta=$("manual-data"); ta.select(); ta.setSelectionRange(0,999999);
+  var ok=false; try{ ok=document.execCommand("copy"); }catch(e){}
+  if(navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(function(){});
+  this.textContent = ok||navigator.clipboard ? "Đã sao chép" : "Hãy chọn và sao chép thủ công";
+});
+
+/* cảnh báo khi đóng giữa chừng */
+window.addEventListener("beforeunload", function(e){
+  if(SESSION.ratings.length>0 && !$("s-done").classList.contains("on")){ e.preventDefault(); e.returnValue=""; }
+});
+})();
+</script>
+</body>
+</html>
